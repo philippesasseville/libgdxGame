@@ -7,9 +7,9 @@ import com.mygdx.game.MyGdxGame;
 public class DesktopLauncher {
 	public static void main (String[] arg) {
 		LwjglApplicationConfiguration cfg = new LwjglApplicationConfiguration();
-        cfg.title = "graphics-demo";
-        cfg.width = 480;
-        cfg.height = 320;
+        cfg.title = MyGdxGame.TITLE;
+        cfg.width = MyGdxGame.V_WIDTH * MyGdxGame.SCALE;
+        cfg.height = MyGdxGame.V_HEIGHT * MyGdxGame.SCALE;
 		new LwjglApplication(new MyGdxGame(), cfg);
 	}
 }
