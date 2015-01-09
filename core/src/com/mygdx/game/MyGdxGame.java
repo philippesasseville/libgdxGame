@@ -39,6 +39,7 @@ public class MyGdxGame extends ApplicationAdapter {
     	
     	Gdx.input.setInputProcessor(new GameInputProcessor());
     	
+    	
 		cam = new BoundedCamera();
 		cam.setToOrtho(false, V_WIDTH, V_HEIGHT);
 		hudCam = new OrthographicCamera();
