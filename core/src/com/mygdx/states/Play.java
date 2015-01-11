@@ -18,6 +18,7 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.Joint;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.physics.box2d.joints.RevoluteJoint;
 import com.badlogic.gdx.physics.box2d.joints.RevoluteJointDef;
 import com.mygdx.game.MyGdxGame;
 import com.mygdx.handlers.GameContactListener;
@@ -36,20 +37,25 @@ public class Play extends GameState{
 	
 	private OrthographicCamera b2dCam;
 	
-	private Player player;
+	private Body playerBody;
+	
+	RevoluteJoint rearWheelRevoluteJoint;
+	RevoluteJoint frontWheelRevoluteJoint;
+	
+	float motorSpeed = 0;
 	
 	public Play(GameStateManager gsm) {
 		
 		super(gsm);
 		
-		world = new World(new Vector2(0, -9.81f), false);
+		world = new World(new Vector2(0, -10f), false);
 		
 		cl = new GameContactListener();
 		world.setContactListener(cl);
 		
 		b2dr = new Box2DDebugRenderer();
 		
-		drawHill(5, 10, 75, 1200);
+		drawHill(5, 10, 50, 1200);
 		
 		createPlayerCart();
 		
@@ -61,34 +67,40 @@ public class Play extends GameState{
 		if(GameInput.isPressed(GameInput.BUTTON4)) {
 			gsm.setState(GameStateManager.MENU);
 		}
-		if(GameInput.isPressed(GameInput.BUTTON1) && cl.isPlayerOnGround()){
-			player.getPlayerBody().applyForceToCenter(0, 300, false);
+		if(GameInput.isDown(GameInput.BUTTON1)){
+			motorSpeed+=0.5f;
 		}
 		if(GameInput.isDown(GameInput.BUTTON2)){
-			player.setSprintFactor(2);
-		}
-		else{
-			player.setSprintFactor(1);
+			motorSpeed-=0.5f;
 		}
 		if(GameInput.isDown(GameInput.BUTTON5)){
-			//player.getPlayerBody().applyLinearImpulse( -10 * player.getSprintFactor() / B2DVars.PPM, 0, 0, 0, false);
-			player.getPlayerBody().setAngularVelocity(1000 * player.getSprintFactor());
+			playerBody.applyTorque(5, true);
 		}
 		if(GameInput.isDown(GameInput.BUTTON6)){
-			//player.getPlayerBody().applyLinearImpulse( 10 * player.getSprintFactor() / B2DVars.PPM, 0, 0, 0, false);
-			player.getPlayerBody().setAngularVelocity(-1000 * player.getSprintFactor());
+			playerBody.applyTorque(-5, true);
 		}
-
+		motorSpeed*=0.99f;
+		if(motorSpeed > 100){
+			motorSpeed = 100;
+		}
+		rearWheelRevoluteJoint.setMotorSpeed(motorSpeed);
+		frontWheelRevoluteJoint.setMotorSpeed(motorSpeed);
 	}
 	
 	public void update(float dt) {
 		handleInput();
+		
+		// motor friction
+		rearWheelRevoluteJoint.setMotorSpeed(rearWheelRevoluteJoint.getMotorSpeed()*0.99f);
+		frontWheelRevoluteJoint.setMotorSpeed(frontWheelRevoluteJoint.getMotorSpeed()*0.99f);
+		
 		world.step(dt, 6, 2);
+		world.clearForces();
 	}
 	
 	public void render() {
 		//set cam to follow player
-		b2dCam.position.set(new Vector2(player.getXPosition(), player.getYPosition()), 0);
+		b2dCam.position.set(new Vector2(playerBody.getPosition().x, playerBody.getPosition().y), 0);
 		b2dCam.zoom = 5;
 		b2dCam.update();
 		
@@ -131,35 +143,6 @@ public class Play extends GameState{
 		
 	}
 	
-	private void createPlayer(){
-		BodyDef bdef = new BodyDef();
-		// create player
-		bdef.position.set(160 / B2DVars.PPM, 1000 / B2DVars.PPM);
-		bdef.type = BodyType.DynamicBody;
-		player = new Player(world.createBody(bdef));
-				
-		//PolygonShape shape = new PolygonShape();
-		//shape.setAsBox(5 / B2DVars.PPM, 5 / B2DVars.PPM);
-		CircleShape cshape = new CircleShape();
-		cshape.setRadius(5 / B2DVars.PPM);
-		FixtureDef fdef = new FixtureDef();
-		fdef.shape = cshape;
-		fdef.filter.categoryBits = B2DVars.BIT_PLAYER;
-		fdef.filter.maskBits = B2DVars.BIT_GROUND;
-		player.getPlayerBody().createFixture(fdef).setUserData("player");
-		player.getPlayerBody().setAngularDamping(0.8f);
-				
-		//PolygonShape shape = new PolygonShape();
-		//create foot sensor
-		//shape.setAsBox(5 / B2DVars.PPM, 2 / B2DVars.PPM, new Vector2(0,-5 / B2DVars.PPM),0);
-		cshape.setRadius(6 / B2DVars.PPM);
-		fdef.shape = cshape;
-		fdef.filter.categoryBits = B2DVars.BIT_PLAYER;
-		fdef.filter.maskBits = B2DVars.BIT_GROUND;
-		fdef.isSensor = true;
-		player.getPlayerBody().createFixture(fdef).setUserData("foot");
-	}
-	
 	private void createPlayerCart(){
 		// add the cart
 		BodyDef carBodyDef = new BodyDef();
@@ -173,8 +156,8 @@ public class Play extends GameState{
 		boxDef.restitution=0.3f;
 		boxDef.filter.groupIndex=-1;
 		boxDef.shape=box;
-		player = new Player(world.createBody(carBodyDef));
-		player.getPlayerBody().createFixture(boxDef);
+		playerBody = world.createBody(carBodyDef);
+		playerBody.createFixture(boxDef);
 		// wheel shape
 		CircleShape wheelShape =new CircleShape();
 		wheelShape.setRadius(12/B2DVars.PPM);
@@ -189,27 +172,25 @@ public class Play extends GameState{
 		BodyDef wheelBodyDef = new BodyDef();
 		wheelBodyDef.type= BodyType.DynamicBody;
 		// rear wheel
-		wheelBodyDef.position.set(player.getPlayerBody().getWorldCenter().x-(16/B2DVars.PPM),player.getPlayerBody().getWorldCenter().y-(15/B2DVars.PPM));
+		wheelBodyDef.position.set(playerBody.getWorldCenter().x-(16/B2DVars.PPM),playerBody.getWorldCenter().y-(15/B2DVars.PPM));
 		Body rearWheel =world.createBody(wheelBodyDef);
 		rearWheel.createFixture(wheelFixture);
 		// front wheel
-		wheelBodyDef.position.set(player.getPlayerBody().getWorldCenter().x+(16/B2DVars.PPM),player.getPlayerBody().getWorldCenter().y-(15/B2DVars.PPM));
+		wheelBodyDef.position.set(playerBody.getWorldCenter().x+(16/B2DVars.PPM),playerBody.getWorldCenter().y-(15/B2DVars.PPM));
 		Body frontWheel=world.createBody(wheelBodyDef);
 		frontWheel.createFixture(wheelFixture);
 		// rear joint
 		RevoluteJointDef rearWheelRevoluteJointDef=new RevoluteJointDef();
-		rearWheelRevoluteJointDef.initialize(rearWheel,player.getPlayerBody(),rearWheel.getWorldCenter());
+		rearWheelRevoluteJointDef.initialize(rearWheel,playerBody,rearWheel.getWorldCenter());
 		rearWheelRevoluteJointDef.enableMotor=true;
 		rearWheelRevoluteJointDef.maxMotorTorque=10000;
-		Joint rearWheelRevoluteJoint;
-		rearWheelRevoluteJoint=world.createJoint(rearWheelRevoluteJointDef);
+		rearWheelRevoluteJoint = (RevoluteJoint) world.createJoint(rearWheelRevoluteJointDef);
 		// front joint
 		RevoluteJointDef frontWheelRevoluteJointDef=new RevoluteJointDef();
-		frontWheelRevoluteJointDef.initialize(frontWheel,player.getPlayerBody(),frontWheel.getWorldCenter());
+		frontWheelRevoluteJointDef.initialize(frontWheel,playerBody,frontWheel.getWorldCenter());
 		frontWheelRevoluteJointDef.enableMotor=true;
 		frontWheelRevoluteJointDef.maxMotorTorque=10000;
-		Joint frontWheelRevoluteJoint;
-		frontWheelRevoluteJoint=world.createJoint(frontWheelRevoluteJointDef);
+		frontWheelRevoluteJoint = (RevoluteJoint) world.createJoint(frontWheelRevoluteJointDef);
 	}
 	
 	private void setupB2d(){
@@ -228,7 +209,6 @@ public class Play extends GameState{
 		
 		for (int i = 0; i < numberOfHills; i++) {
 			int randomHeight = (int)(Math.random()*variability);
-			System.out.println("randomHeight :" + randomHeight);
 			if(i != 0){
 					hillStartY-=randomHeight;
 			}

@@ -1,14 +1,16 @@
 package entities;
 
 import com.badlogic.gdx.physics.box2d.Body;
+import com.badlogic.gdx.physics.box2d.Joint;
+import com.badlogic.gdx.physics.box2d.joints.RevoluteJoint;
 
 public class Player {
 	private Body playerBody;
-	private float sprintFactor;
+	RevoluteJoint rearWheelRevoluteJoint;
+	RevoluteJoint frontWheelRevoluteJoint;
 	
 	public Player(Body body){
 		this.playerBody = body;
-		this.sprintFactor = 1;
 	}
 	
 	public Body getPlayerBody(){
@@ -18,13 +20,25 @@ public class Player {
 		playerBody = body;
 		return;
 	}
-	public float getSprintFactor(){
-		return sprintFactor;
+	public RevoluteJoint getRearWheelJoint(){
+		return rearWheelRevoluteJoint;
 	}
-	public void setSprintFactor(float sprintf){
-		sprintFactor = sprintf;
+	
+	public RevoluteJoint getFrontWheelJoint(){
+		return rearWheelRevoluteJoint;
+	}
+	
+	
+	public void setFrontWheelJoint(RevoluteJoint rj){
+		frontWheelRevoluteJoint = rj;
 		return;
 	}
+	
+	public void setRearWheelJoint(RevoluteJoint rj){
+		frontWheelRevoluteJoint = rj;
+		return;
+	}
+	
 	public float getXPosition(){
 		return playerBody.getPosition().x;
 	}
@@ -32,4 +46,5 @@ public class Player {
 	public float getYPosition() {
 		return playerBody.getPosition().y;
 	}
+	
 }
