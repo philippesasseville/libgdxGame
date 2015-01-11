@@ -28,4 +28,8 @@ public class Player {
 	public float getXPosition(){
 		return playerBody.getPosition().x;
 	}
+
+	public float getYPosition() {
+		return playerBody.getPosition().y;
+	}
 }
