@@ -48,14 +48,16 @@ public class Play extends GameState{
 		
 		super(gsm);
 		
-		world = new World(new Vector2(0, -10f), false);
+		world = new World(new Vector2(0, -10), false);
 		
 		cl = new GameContactListener();
 		world.setContactListener(cl);
 		
 		b2dr = new Box2DDebugRenderer();
 		
-		drawHill(5, 10, 50, 1200);
+		createPlatform();
+		
+		drawHill(6, 10, 250, 10000);
 		
 		createPlayerCart();
 		
@@ -74,10 +76,10 @@ public class Play extends GameState{
 			motorSpeed-=0.5f;
 		}
 		if(GameInput.isDown(GameInput.BUTTON5)){
-			playerBody.applyTorque(5, true);
+			playerBody.applyTorque(10, true);
 		}
 		if(GameInput.isDown(GameInput.BUTTON6)){
-			playerBody.applyTorque(-5, true);
+			playerBody.applyTorque(-10, true);
 		}
 		motorSpeed*=0.99f;
 		if(motorSpeed > 100){
@@ -90,10 +92,6 @@ public class Play extends GameState{
 	public void update(float dt) {
 		handleInput();
 		
-		// motor friction
-		rearWheelRevoluteJoint.setMotorSpeed(rearWheelRevoluteJoint.getMotorSpeed()*0.99f);
-		frontWheelRevoluteJoint.setMotorSpeed(frontWheelRevoluteJoint.getMotorSpeed()*0.99f);
-		
 		world.step(dt, 6, 2);
 		world.clearForces();
 	}
@@ -101,7 +99,6 @@ public class Play extends GameState{
 	public void render() {
 		//set cam to follow player
 		b2dCam.position.set(new Vector2(playerBody.getPosition().x, playerBody.getPosition().y), 0);
-		b2dCam.zoom = 5;
 		b2dCam.update();
 		
 		// clear screen
@@ -117,28 +114,15 @@ public class Play extends GameState{
 	private void createPlatform(){
 		// create platform
 		BodyDef bdef = new BodyDef();
-		bdef.position.set(160 / B2DVars.PPM , 120 / B2DVars.PPM);
+		bdef.position.set(190 / B2DVars.PPM , 150 / B2DVars.PPM);
 		bdef.type = BodyType.StaticBody;
 		Body body = world.createBody(bdef);
 				
 		PolygonShape shape = new PolygonShape();
-		shape.setAsBox(150 / B2DVars.PPM, 5 / B2DVars.PPM, new Vector2(0,0), -60);
+		shape.setAsBox(150 / B2DVars.PPM, 5 / B2DVars.PPM, new Vector2(0,0), 0);
 		FixtureDef fdef = new FixtureDef();
 		fdef.shape = shape;
 		fdef.friction = 0.2f;
-		fdef.filter.categoryBits = B2DVars.BIT_GROUND;
-		fdef.filter.maskBits = B2DVars.BIT_PLAYER;
-		body.createFixture(fdef);
-		
-		bdef.position.set(640 / B2DVars.PPM , 120 / B2DVars.PPM);
-		bdef.type = BodyType.StaticBody;
-		body = world.createBody(bdef);
-				
-		shape.setAsBox(150 / B2DVars.PPM, 5 / B2DVars.PPM, new Vector2(0,0), 60);
-		fdef.shape = shape;
-		//fdef.friction = 0.95f;
-		fdef.filter.categoryBits = B2DVars.BIT_GROUND;
-		fdef.filter.maskBits = B2DVars.BIT_PLAYER;
 		body.createFixture(fdef);
 		
 	}
@@ -197,6 +181,7 @@ public class Play extends GameState{
 		// set up box2d cam
 		b2dCam = new OrthographicCamera();
 		b2dCam.setToOrtho(false, MyGdxGame.V_WIDTH / B2DVars.PPM, MyGdxGame.V_HEIGHT / B2DVars.PPM);
+		b2dCam.zoom = 3;
 	}
 	
 	private void drawHill(int numberOfHills, int pixelStep, int variability, int levelLenght){
