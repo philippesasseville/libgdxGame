@@ -48,7 +48,7 @@ public class Play extends GameState{
 		
 		super(gsm);
 		
-		world = new World(new Vector2(0, -10), false);
+		world = new World(new Vector2(0, B2DVars.GRAVITY), false);
 		
 		cl = new GameContactListener();
 		world.setContactListener(cl);
@@ -57,7 +57,7 @@ public class Play extends GameState{
 		
 		createPlatform();
 		
-		drawHill(6, 10, 250, 10000);
+		drawHill(12, 10, 150, 10000);
 		
 		createPlayerCart();
 		
@@ -76,16 +76,16 @@ public class Play extends GameState{
 			motorSpeed-=0.5f;
 		}
 		if(GameInput.isDown(GameInput.BUTTON5)){
-			playerBody.applyTorque(10, true);
+			playerBody.applyTorque(6, true);
 		}
 		if(GameInput.isDown(GameInput.BUTTON6)){
-			playerBody.applyTorque(-10, true);
+			playerBody.applyTorque(-6, true);
 		}
 		motorSpeed*=0.99f;
 		if(motorSpeed > 100){
 			motorSpeed = 100;
 		}
-		rearWheelRevoluteJoint.setMotorSpeed(motorSpeed);
+		rearWheelRevoluteJoint.setMotorSpeed(motorSpeed* 0.8f);
 		frontWheelRevoluteJoint.setMotorSpeed(motorSpeed);
 	}
 	
